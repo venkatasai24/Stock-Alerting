@@ -188,4 +188,10 @@ Always validate before executing trades.
 
 ---
 
+python stock_alerts.py           # full scheduler
+python stock_alerts.py TCS       # check any stock
+python stock_alerts.py --summary # instant P&L
+python stock_alerts.py --reco    # instant top picks
+python stock_alerts.py --score TCS  # score a stock
+
 Built for Sai's Portfolio 🚀
