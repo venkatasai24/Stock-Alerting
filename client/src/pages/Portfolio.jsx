@@ -47,7 +47,7 @@ function PieTooltip({ active, payload, total }) {
 /* ── Allocation donut — chart only, no legend ── */
 function DonutChart({ data, total }) {
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={data} cx="50%" cy="50%"
@@ -387,9 +387,11 @@ export default function Portfolio() {
             <div style={{ width: 1, background: "var(--border)", flexShrink: 0 }} />
 
             {/* right: donut chart */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", minHeight: 300 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", minHeight: 240 }}>
               {hasLive && pieData.length >= 1 ? (
-                <DonutChart data={pieData} total={summary?.totalCurrent} />
+                <div style={{ width: "100%", height: 240 }}>
+                  <DonutChart data={pieData} total={summary?.totalCurrent} />
+                </div>
               ) : (
                 <div className="text-muted" style={{ fontSize: 13, textAlign: "center" }}>
                   {refreshing ? <span className="spinner spinner-sm" /> : "Load live prices to see allocation"}
