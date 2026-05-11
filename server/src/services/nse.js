@@ -57,19 +57,32 @@ export async function fetchPrice(symbol) {
   return null;
 }
 
+// marketState is null for indices from non-Indian servers — use
+// currentTradingPeriod.regular.{start,end} Unix timestamps instead.
+// On holidays those timestamps reflect a different day so now falls outside → false.
 export async function isMarketOpen() {
+  const ist = new Date(Date.now() + 330 * 60 * 1000);
+  if (ist.getUTCDay() === 0 || ist.getUTCDay() === 6) {
+    console.log("[NSE] isMarketOpen: weekend — false");
+    return false;
+  }
   try {
     const { data } = await axios.get(`${YF_BASE}/%5ENSEI`, {
       headers,
       params: { interval: "1d", range: "1d" },
       timeout: 5000,
     });
-    const meta = data?.chart?.result?.[0]?.meta;
-    const open = meta?.marketState === "REGULAR";
-    console.log(`[NSE] Market state: ${meta?.marketState ?? "unknown"} — open: ${open}`);
+    const regular = data?.chart?.result?.[0]?.meta?.currentTradingPeriod?.regular;
+    if (!regular) {
+      console.warn("[NSE] isMarketOpen: no trading period data — false");
+      return false;
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const open = now >= regular.start && now <= regular.end;
+    console.log(`[NSE] isMarketOpen: session ${regular.start}–${regular.end} now=${now} → ${open}`);
     return open;
   } catch (err) {
-    console.warn("[NSE] isMarketOpen failed:", err.message);
+    console.warn("[NSE] isMarketOpen fetch failed:", err.message, "— false");
     return false;
   }
 }
