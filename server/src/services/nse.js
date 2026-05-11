@@ -83,7 +83,8 @@ export async function fetchMarketTrend() {
     if (!meta) return { trend: "UNKNOWN", changeP: 0, price: 0 };
 
     const marketState = meta.marketState ?? "CLOSED";
-    const isHoliday   = marketState !== "REGULAR" && marketState !== "PRE" && marketState !== "POST";
+    // "CLOSED" = after-hours on a normal trading day, not a holiday
+    const isHoliday   = !["REGULAR", "PRE", "POST", "CLOSED"].includes(marketState);
 
     const changeP = meta.regularMarketPrice && meta.chartPreviousClose
       ? +((( meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100).toFixed(2)

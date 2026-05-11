@@ -47,7 +47,7 @@ function PieTooltip({ active, payload, total }) {
 /* ── Allocation donut — chart only, no legend ── */
 function DonutChart({ data, total }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={260}>
       <PieChart>
         <Pie
           data={data} cx="50%" cy="50%"
