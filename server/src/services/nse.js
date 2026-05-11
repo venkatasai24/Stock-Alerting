@@ -43,7 +43,9 @@ export async function fetchPrice(symbol) {
         low:         meta.regularMarketDayLow  ?? 0,
         weekHigh,
         weekLow,
-        changeP:     marketState === "REGULAR" ? changeP : 0,
+        // REGULAR = live intraday, CLOSED = today's final change — both valid.
+        // PRE = pre-market price (unreliable), zero it out.
+        changeP:     (marketState === "REGULAR" || marketState === "CLOSED") ? changeP : 0,
         marketState,
         source:      `YF${suffix}`,
       };
