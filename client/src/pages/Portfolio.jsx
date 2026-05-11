@@ -148,6 +148,7 @@ export default function Portfolio() {
   const [modal,      setModal]      = useState(null);   // "add" | stock object (edit)
   const [detailStock,setDetailStock]= useState(null);   // stock for detail modal
   const [loading,    setLoading]    = useState(true);
+  const [liveLoading, setLiveLoading] = useState(true);
   const [deleteId,   setDeleteId]   = useState(null);
   const [sort,        setSort]        = useState({ key: "pnlP", dir: "desc" });
   const [filter,      setFilter]      = useState("all");
@@ -173,6 +174,8 @@ export default function Portfolio() {
       setSummary(data);
     } catch (e) {
       setLiveError(e.response?.data?.message || "Could not load live prices");
+    } finally {
+      setLiveLoading(false);
     }
   }, []);
 
@@ -267,7 +270,7 @@ export default function Portfolio() {
   // keep detail modal in sync with live data
   const detailEnriched = detailStock ? enriched.find(s => s._id === detailStock._id) : null;
 
-  if (loading) return <div className="page-loader"><div className="spinner" /></div>;
+  if (loading || liveLoading) return <div className="page-loader"><div className="spinner" /></div>;
 
   return (
     <div className="page">
