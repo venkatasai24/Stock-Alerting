@@ -246,13 +246,15 @@ export default function Watchlist() {
   async function fetchStocks() {
     const { data } = await api.get("/watchlist");
     setStocks(data);
-    setLoading(false);
   }
 
   const fetchLiveData = useCallback(async () => {
-    const { data } = await api.get("/watchlist/live");
-    setLive(data);
-    setLoading(false);
+    try {
+      const { data } = await api.get("/watchlist/live");
+      setLive(data);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const { lastUpdated, refreshing, refresh } = useAutoRefresh(fetchLiveData, 60000);

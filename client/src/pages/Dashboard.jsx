@@ -56,14 +56,19 @@ export default function Dashboard() {
   const [picks,     setPicks]     = useState(null);
   const [picksLoad, setPicksLoad] = useState(false);
   const [analysing, setAnalysing] = useState(false);
+  const [loading,   setLoading]   = useState(true);
 
   const fetchData = useCallback(async () => {
-    const [mkt, alts] = await Promise.all([
-      api.get("/market/trend"),
-      api.get("/alerts?limit=6"),
-    ]);
-    setMarket(mkt.data);
-    setAlerts(alts.data.alerts);
+    try {
+      const [mkt, alts] = await Promise.all([
+        api.get("/market/trend"),
+        api.get("/alerts?limit=6"),
+      ]);
+      setMarket(mkt.data);
+      setAlerts(alts.data.alerts);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const { lastUpdated, refreshing, refresh } = useAutoRefresh(fetchData, 60000);
@@ -90,6 +95,8 @@ export default function Dashboard() {
       setTimeout(refresh, 3000);
     } catch {} finally { setAnalysing(false); }
   }
+
+  if (loading) return <div className="page-loader"><div className="spinner" /></div>;
 
   return (
     <div className="page">
