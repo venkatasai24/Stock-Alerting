@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { useAuth } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="/alerts"    element={<PrivateRoute><Alerts /></PrivateRoute>} />
         <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
+      <Analytics />
     </>
   );
 }
