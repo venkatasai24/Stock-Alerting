@@ -11,7 +11,10 @@ router.get("/", async (req, res) => {
   try {
     const stocks = await PortfolioStock.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json(stocks);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] GET / error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.post("/", async (req, res) => {
@@ -27,8 +30,12 @@ router.post("/", async (req, res) => {
       userId: req.user._id, symbol, name, shares, avgPrice,
       buyBelow: buyBelow || null, sellAbove: sellAbove || null, action: action || "HOLD",
     });
+    console.log(`[Portfolio] Added ${symbol} for user ${req.user._id}`);
     res.status(201).json(stock);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] POST / error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.put("/:id", async (req, res) => {
@@ -40,19 +47,24 @@ router.put("/:id", async (req, res) => {
     );
     if (!stock) return res.status(404).json({ message: "Not found" });
     res.json(stock);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] PUT /:id error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
     const stock = await PortfolioStock.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!stock) return res.status(404).json({ message: "Not found" });
+    console.log(`[Portfolio] Deleted ${stock.symbol} for user ${req.user._id}`);
     res.json({ message: "Deleted" });
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] DELETE /:id error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
-// Full P&L summary with live prices — parallel fetches
-// IMPORTANT: must be defined BEFORE /:id/live so Express doesn't match "summary" as an id
 router.get("/summary/live", async (req, res) => {
   try {
     const stocks = await PortfolioStock.find({ userId: req.user._id, shares: { $gt: 0 } });
@@ -60,7 +72,7 @@ router.get("/summary/live", async (req, res) => {
       return res.json({ totalInvested: 0, totalCurrent: 0, totalPnl: 0, totalPnlP: 0, stocks: [] });
     }
 
-    // Fetch all prices in parallel — no more sequential waiting
+    console.log(`[Portfolio] Summary/live for user ${req.user._id} — ${stocks.length} stocks`);
     const prices = await Promise.all(stocks.map(s => fetchPrice(s.symbol).catch(() => null)));
 
     const totalInvested = stocks.reduce((sum, s) => sum + s.shares * s.avgPrice, 0);
@@ -76,7 +88,6 @@ router.get("/summary/live", async (req, res) => {
       return { stock, data, decision, invested, current };
     });
 
-    // Holiday if any price returned a non-REGULAR market state
     const holiday = prices.some(p => p && p.marketState && p.marketState !== "REGULAR" && p.marketState !== "PRE" && p.marketState !== "POST");
 
     res.json({
@@ -87,10 +98,12 @@ router.get("/summary/live", async (req, res) => {
       stocks: enriched,
       holiday,
     });
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] GET /summary/live error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
-// Live price + decision for a single stock
 router.get("/:id/live", async (req, res) => {
   try {
     const stock = await PortfolioStock.findOne({ _id: req.params.id, userId: req.user._id });
@@ -99,7 +112,10 @@ router.get("/:id/live", async (req, res) => {
     if (!data) return res.status(503).json({ message: "Price unavailable" });
     const decision = evaluateStock(stock, data);
     res.json({ ...data, decision });
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Portfolio] GET /:id/live error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 export default router;

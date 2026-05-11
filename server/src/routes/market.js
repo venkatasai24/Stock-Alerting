@@ -11,7 +11,10 @@ router.use(protect);
 router.get("/trend", async (req, res) => {
   try {
     res.json(await fetchMarketTrend());
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Market] GET /trend error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.get("/price/:symbol", async (req, res) => {
@@ -19,15 +22,23 @@ router.get("/price/:symbol", async (req, res) => {
     const data = await fetchPrice(req.params.symbol.toUpperCase());
     if (!data) return res.status(404).json({ message: "Price not available" });
     res.json(data);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Market] GET /price error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.get("/picks", async (req, res) => {
   try {
+    console.log("[Market] Running Nifty50 recommendations…");
     const result = await runRecommendations();
     if (!result) return res.json({ bearish: true, top: [] });
+    console.log(`[Market] Picks done — top: ${result.top?.map(s => s.symbol).join(", ") ?? "bearish"}`);
     res.json(result);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Market] GET /picks error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.get("/nifty50", async (req, res) => {
@@ -39,7 +50,8 @@ router.get("/search", async (req, res) => {
     const q = req.query.q?.trim();
     if (!q) return res.json([]);
 
-    // Tier 1: Local NSE database — instant, works for any query length
+    console.log(`[Market] Search: "${q}"`);
+
     const local = searchNse(q);
     if (local.length > 0) return res.json(local);
 
@@ -49,7 +61,6 @@ router.get("/search", async (req, res) => {
       "Accept": "application/json",
     };
 
-    // Tier 2: Yahoo Finance search
     try {
       const { data } = await ax.get(
         "https://query2.finance.yahoo.com/v1/finance/search",
@@ -67,10 +78,10 @@ router.get("/search", async (req, res) => {
           exchange: "NSE",
         }));
       if (results.length > 0) return res.json(results);
-    } catch { /* fall through to tier 3 */ }
+    } catch (err) {
+      console.warn(`[Market] YF search failed for "${q}":`, err.message);
+    }
 
-    // Tier 3: Direct symbol validation — handles any NSE stock not in cache
-    // (InvITs, REITs, newly listed stocks, etc.)
     const sym = q.toUpperCase();
     if (/^[A-Z0-9&-]{2,20}$/.test(sym)) {
       try {
@@ -87,12 +98,15 @@ router.get("/search", async (req, res) => {
             type:     "EQ",
           }]);
         }
-      } catch { /* no result */ }
+      } catch (err) {
+        console.warn(`[Market] Direct YF validation failed for "${sym}":`, err.message);
+      }
     }
 
+    console.log(`[Market] Search "${q}" — no results`);
     res.json([]);
   } catch (e) {
-    console.error("[search]", e.message);
+    console.error("[Market] GET /search error:", e.message);
     res.status(500).json({ message: e.message });
   }
 });

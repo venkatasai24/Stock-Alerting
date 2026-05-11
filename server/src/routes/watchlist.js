@@ -10,7 +10,10 @@ router.get("/", async (req, res) => {
   try {
     const stocks = await WatchlistStock.find({ userId: req.user._id }).sort({ createdAt: -1 });
     res.json(stocks);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Watchlist] GET / error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.post("/", async (req, res) => {
@@ -26,8 +29,12 @@ router.post("/", async (req, res) => {
       shares: shares || null, targetBuy: targetBuy || null, notes: notes || "",
       priority: priority || "medium",
     });
+    console.log(`[Watchlist] Added ${symbol} for user ${req.user._id}`);
     res.status(201).json(stock);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Watchlist] POST / error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.put("/:id", async (req, res) => {
@@ -39,15 +46,22 @@ router.put("/:id", async (req, res) => {
     );
     if (!stock) return res.status(404).json({ message: "Not found" });
     res.json(stock);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Watchlist] PUT /:id error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
     const stock = await WatchlistStock.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
     if (!stock) return res.status(404).json({ message: "Not found" });
+    console.log(`[Watchlist] Deleted ${stock.symbol} for user ${req.user._id}`);
     res.json({ message: "Deleted" });
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Watchlist] DELETE /:id error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 router.get("/live", async (req, res) => {
@@ -55,7 +69,7 @@ router.get("/live", async (req, res) => {
     const stocks = await WatchlistStock.find({ userId: req.user._id });
     if (!stocks.length) return res.json([]);
 
-    // Parallel price fetches
+    console.log(`[Watchlist] Live fetch for user ${req.user._id} — ${stocks.length} stocks`);
     const prices = await Promise.all(stocks.map(s => fetchPrice(s.symbol).catch(() => null)));
 
     const enriched = stocks.map((stock, i) => {
@@ -64,7 +78,10 @@ router.get("/live", async (req, res) => {
       return { stock, data, atTarget };
     });
     res.json(enriched);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error("[Watchlist] GET /live error:", e.message);
+    res.status(500).json({ message: e.message });
+  }
 });
 
 export default router;
