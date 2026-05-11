@@ -1,197 +1,122 @@
-# 🚀 Sai's Stock Alert System — Pro Setup Guide
+# StockAlert
 
-## 🧠 Overview
+Full-stack NSE portfolio monitoring app with real-time alerts, AI signals, and Telegram notifications.
 
-This is a **fully dynamic stock monitoring system** that:
+## Stack
 
-* 📊 Fetches your **real portfolio** from Zerodha (Kite API)
-* 📈 Uses NSE data via `nsepython`
-* 🔔 Sends **Telegram alerts** at key market times
-* 🧠 Provides **buy/sell/hold decisions**
-* 🔥 Recommends **top long-term stocks daily**
+| Layer | Tech |
+|-------|------|
+| Frontend | React 18 + Vite, React Router v6, Recharts |
+| Backend | Node.js + Express (ES modules) |
+| Database | MongoDB Atlas (Mongoose) |
+| Auth | JWT (localStorage) |
+| Market Data | Yahoo Finance NSE API (`.NS` suffix) |
+| Real-time | Server-Sent Events (SSE) for badge push |
+| Notifications | Telegram Bot API |
 
----
+## Features
 
-# ⚡ Quick Start (Local Testing)
+- **Auth** — register / login with JWT
+- **Portfolio** — add stocks with avg buy price, targets, priority, stop-loss; live P&L
+- **Decision engine** — 7 alert types based on price vs targets, P&L %, 52W range, intraday momentum
+- **Watchlist** — track stocks you don't own with a target buy price; 5-signal analysis with scored verdict
+- **Alerts** — real-time unread badge via SSE; per-day dedup prevents duplicate alerts
+- **Nifty 50 Picks** — live scoring of all 50 Nifty stocks, top 5 shown on dashboard
+- **Market trend** — Nifty 50 live price, change %, bull/bear/sideways label
+- **Scheduled analysis** — runs at :30 past each hour, 9:30 AM–3:30 PM IST, Mon–Fri
+- **Manual trigger** — "Run Analysis" button on dashboard
+- **Telegram alerts** — optional per-user or global chat ID
+- **Dark / Light theme** — persisted in localStorage
+- **Mobile responsive** — bottom navigation bar, pie chart, search
 
-```bash
-# 1. Install dependencies
-pip install kiteconnect nsepython schedule requests
+## Alert Types
 
-# 2. Add your credentials in script
-#    API_KEY, ACCESS_TOKEN, BOT_TOKEN, CHAT_ID
+| Type | Trigger |
+|------|---------|
+| BUY_MORE | Price ≤ `buyBelow` target |
+| BOOK_PROFIT | Price ≥ `sellAbove` target |
+| PARTIAL_SELL | P&L ≥ +25% and price near 52W high |
+| STOP_LOSS | P&L ≤ stop-loss threshold |
+| ACCUMULATE | Price dipped ≥ 3% from avg, not at buy target yet |
+| NEAR_52W_LOW | Price within 8% of 52-week low |
+| WATCHLIST_TARGET | Watchlist stock at or below target buy price |
 
-# 3. Run system
-python your_script.py
-```
+## Local Development
 
----
-
-# 🤖 Step 1: Create Telegram Bot
-
-1. Open Telegram → Search **@BotFather**
-2. Send `/newbot`
-3. Give name (e.g., "Sai Portfolio Alerts")
-4. Copy the **BOT_TOKEN**
-5. Open **@userinfobot**
-6. Copy your **CHAT_ID**
-7. Add both in your script
-
----
-
-# 🔑 Step 2: Zerodha Setup (Kite API)
-
-1. Go to Kite Connect dashboard
-2. Create a new app
-3. Get:
-
-   * `API_KEY`
-   * `API_SECRET`
-4. Generate **ACCESS_TOKEN**
-
-👉 Add to script:
-
-```python
-API_KEY = "your_api_key"
-ACCESS_TOKEN = "your_access_token"
-```
-
-⚠️ Note: Access token expires daily (manual refresh needed for now)
-
----
-
-# ⏰ How Alerts Work
-
-## 📅 Active Days
-
-* Monday → Friday only
-
-## 🕙 Alert Times
-
-| Time     | Action                      |
-| -------- | --------------------------- |
-| 10:45 AM | Portfolio + Recommendations |
-| 1:00 PM  | Portfolio Check             |
-| 3:00 PM  | Portfolio Check             |
-
----
-
-# 🔔 Alert Types
-
-### 📊 Portfolio Update
-
-* Total invested
-* Current value
-* Overall P&L
-
-### ⚠️ Action Alerts
-
-Triggered only when needed:
-
-* ❌ **EXIT** → Loss > 10%
-* 💰 **PARTIAL SELL** → Profit > 25%
-* ⚠️ **REVIEW** → Weak stock
-
----
-
-### 🔥 Daily Recommendations (10:45 AM)
-
-* Top 3 stocks from NIFTY 50
-* Based on:
-
-  * Momentum
-  * Stability
-  * Price strength
-
----
-
-# ☁️ Deployment (Recommended)
-
-## 🚀 Deploy on Railway
+### 1. Install dependencies
 
 ```bash
-# Push code to GitHub
-git init
-git add .
-git commit -m "stock bot"
-git push origin main
+cd server && npm install
+cd ../client && npm install
 ```
 
-### Then:
+### 2. Configure server
 
-1. Go to Railway.app
-2. New Project → Deploy from GitHub
-3. Select repo
-4. Add environment variables:
+Copy `server/.env.example` to `server/.env` and fill in:
+
+```env
+PORT=5000
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net/stock-alerting
+JWT_SECRET=a_long_random_secret
+CLIENT_URL=http://localhost:5173
+BOT_TOKEN=           # optional — Telegram bot token
+CHAT_ID=             # optional — fallback Telegram chat ID
+```
+
+### 3. Run
 
 ```bash
-API_KEY=xxx
-ACCESS_TOKEN=xxx
-BOT_TOKEN=xxx
-CHAT_ID=xxx
+# Terminal 1
+cd server && npm run dev
+
+# Terminal 2
+cd client && npm run dev
 ```
 
-5. Start command:
+Open http://localhost:5173
 
-```bash
-python your_script.py
+## Production Deployment
+
+### Backend → Render
+
+1. Push repo to GitHub
+2. Create a **Web Service** on [render.com](https://render.com)
+   - Root directory: `server`
+   - Build command: `npm install`
+   - Start command: `npm start`
+3. Add environment variables (same as `.env` above, with production values):
+   - `MONGODB_URI` — MongoDB Atlas connection string
+   - `JWT_SECRET` — random secret (32+ chars)
+   - `CLIENT_URL` — your Vercel URL, e.g. `https://stockalert.vercel.app`
+   - `BOT_TOKEN`, `CHAT_ID` — optional
+
+### Frontend → Vercel
+
+1. Create a **new project** on [vercel.com](https://vercel.com), import your GitHub repo
+   - Root directory: `client`
+   - Framework preset: **Vite**
+2. Add environment variable:
+   - `VITE_API_URL` = `https://your-render-service.onrender.com/api`
+3. Deploy
+
+> The Vite proxy (`/api → localhost:5000`) is dev-only. In production, `VITE_API_URL` points directly to Render.
+
+## Project Structure
+
 ```
-
----
-
-# 🧠 Architecture
-
+stock-alerting/
+├── client/                  # React + Vite frontend
+│   └── src/
+│       ├── api/axios.js     # Axios instance (VITE_API_URL aware)
+│       ├── components/      # Navbar (SSE badge), StockModal, etc.
+│       ├── pages/           # Dashboard, Portfolio, Watchlist, Alerts
+│       ├── hooks/           # useAutoRefresh, useTheme
+│       └── utils/           # marketStatus, decisionEngine helpers
+└── server/                  # Express backend
+    └── src/
+        ├── routes/          # auth, portfolio, watchlist, market, alerts (SSE)
+        ├── models/          # User, PortfolioStock, WatchlistStock, Alert
+        ├── services/        # nse.js, decisionEngine.js, telegram.js, alertEmitter.js
+        ├── jobs/            # scheduler.js — cron + analysis functions
+        └── index.js         # Express entry point
 ```
-Zerodha API → Portfolio
-        ↓
-nsepython → Live Market Data
-        ↓
-Decision Engine
-        ↓
-Telegram Alerts
-        ↓
-Scheduler (Timed Execution)
-```
-
----
-
-# 📱 Notes
-
-* ❌ No hardcoded stocks
-* ✅ Fully dynamic portfolio
-* ❌ No Yahoo Finance dependency
-* ✅ Uses NSE + Zerodha only
-
----
-
-# ⚠️ Important
-
-* Zerodha **ACCESS_TOKEN expires daily**
-* You must refresh it manually (for now)
-
----
-
-# 🚀 Future Upgrades (Optional)
-
-* 🔁 Auto-refresh Zerodha token
-* 📊 Sector-based stock picking
-* 🧠 Fundamental analysis (PE, ROE)
-* 🔕 Alert only on changes (no repetition)
-* 📈 Chart integration
-
----
-
-## 💬 Final Note
-
-This is a **decision-support system**, not a trading bot.
-Always validate before executing trades.
-
----
-
-python stock_alerts.py           # full scheduler
-python stock_alerts.py TCS       # check any stock
-python stock_alerts.py --summary # instant P&L
-python stock_alerts.py --reco    # instant top picks
-python stock_alerts.py --score TCS  # score a stock
-
-Built for Sai's Portfolio 🚀

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls c:\\\\Users\\\\acer\\\\Documents\\\\scripts --ignore .venv -la 2>/dev/null || find c:\\\\Users\\\\acer\\\\Documents\\\\scripts -maxdepth 2 -not -path '*/.venv/*' -not -path '*\\\\\\\\.venv\\\\\\\\*' 2>/dev/null)",
+      "Read(//c/Users/acer/Documents/scripts/*/.venv/**)",
+      "PowerShell(Get-WmiObject -Class Win32_LogicalDisk -Filter \"DeviceID='C:'\" | Select-Object @{N='FreeGB';E={[math]::Round\\($_.FreeSpace/1GB,2\\)}}, @{N='TotalGB';E={[math]::Round\\($_.Size/1GB,2\\)}})",
+      "Bash(wmic logicaldisk *)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\acer\\\\Documents\\\\web development\\\\stock alerting\" -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object FullName)",
+      "Read(//mnt/d/**)",
+      "Read(//mnt/c/Users/acer/Documents/**)",
+      "Read(//mnt/c/Users/acer/Documents/web development/**)",
+      "Bash(cmd.exe /c \"dir /a \\\\\"D:\\\\\\\\windows data\\\\\"\")",
+      "Bash(cmd.exe /c \"dir /a \\\\\"C:\\\\\\\\Users\\\\\\\\acer\\\\\\\\Documents\\\\\\\\scripts\\\\\"\")",
+      "Bash(cmd.exe /c \"dir /a /s \\\\\"C:\\\\\\\\Users\\\\\\\\acer\\\\\\\\Documents\\\\\\\\web development\\\\\\\\stock alerting\\\\\"\")",
+      "Bash(cmd.exe /c \"dir /a /s /b \\\\\"C:\\\\\\\\Users\\\\\\\\acer\\\\\\\\Documents\\\\\\\\web development\\\\\\\\stock alerting\\\\\\\\server\\\\\"\")",
+      "Bash(cmd.exe /c \"robocopy \\\\\"C:\\\\\\\\Users\\\\\\\\acer\\\\\\\\Documents\\\\\\\\scripts\\\\\" \\\\\"D:\\\\\\\\windows data\\\\\\\\stock alerting\\\\\" /E /COPYALL /XD .venv /NFL /NDL /NJH\")",
+      "Bash(cmd.exe /c \"robocopy \\\\\"C:\\\\\\\\Users\\\\\\\\acer\\\\\\\\Documents\\\\\\\\scripts\\\\\" \\\\\"D:\\\\\\\\windows data\\\\\\\\stock alerting\\\\\" /E /COPY:DAT /XD .venv /NFL /NDL /NJH /NJS\")"
+    ]
+  }
+}

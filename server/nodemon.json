@@ -1,0 +1,8 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "env": {
+    "NODE_OPTIONS": "--openssl-legacy-provider",
+    "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+  }
+}
