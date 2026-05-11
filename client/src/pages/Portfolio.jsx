@@ -47,7 +47,7 @@ function PieTooltip({ active, payload, total }) {
 /* ── Allocation donut — chart only, no legend ── */
 function DonutChart({ data, total }) {
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" aspect={1}>
       <PieChart>
         <Pie
           data={data} cx="50%" cy="50%"
@@ -387,9 +387,9 @@ export default function Portfolio() {
             <div style={{ width: 1, background: "var(--border)", flexShrink: 0 }} />
 
             {/* right: donut chart */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", minHeight: 240 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", minHeight: 240 }}>
               {hasLive && pieData.length >= 1 ? (
-                <div style={{ width: "100%", height: 240 }}>
+                <div style={{ width: "100%", maxWidth: 220, margin: "0 auto" }}>
                   <DonutChart data={pieData} total={summary?.totalCurrent} />
                 </div>
               ) : (
