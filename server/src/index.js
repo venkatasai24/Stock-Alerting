@@ -12,8 +12,16 @@ import alertRoutes     from "./routes/alerts.js";
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173").split(",").map(s => s.trim());
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+const allowedOrigins = new Set(
+  (process.env.CLIENT_URL || "http://localhost:5173").split(",").map(s => s.trim())
+);
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.has(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use("/api/auth",      authRoutes);
