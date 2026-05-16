@@ -155,8 +155,11 @@ export async function runWatchlistAnalysis() {
 }
 
 export async function runRecommendations() {
+  const open = await isMarketOpen();
+  if (!open) return { closed: true };
+
   const market = await fetchMarketTrend();
-  if (market.trend === "BEARISH") return { bearish: true };
+  if (market.trend === "BEARISH" || market.trend === "UNKNOWN") return { bearish: true };
 
   const results = [];
   for (const sym of NIFTY50) {

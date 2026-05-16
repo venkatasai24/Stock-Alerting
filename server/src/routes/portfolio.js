@@ -84,7 +84,9 @@ router.get("/summary/live", async (req, res) => {
       const invested = stock.shares * stock.avgPrice;
       const current  = stock.shares * data.price;
       totalCurrent  += current;
-      const decision = evaluateStock(stock, data);
+      // Zero out changeP when market is not live — avoids stale intraday signals (BUY_MORE)
+      const evalData = data.marketState === "REGULAR" ? data : { ...data, changeP: 0 };
+      const decision = evaluateStock(stock, evalData);
       return { stock, data, decision, invested, current };
     });
 
@@ -110,7 +112,8 @@ router.get("/:id/live", async (req, res) => {
     if (!stock) return res.status(404).json({ message: "Not found" });
     const data = await fetchPrice(stock.symbol);
     if (!data) return res.status(503).json({ message: "Price unavailable" });
-    const decision = evaluateStock(stock, data);
+    const evalData = data.marketState === "REGULAR" ? data : { ...data, changeP: 0 };
+    const decision = evaluateStock(stock, evalData);
     res.json({ ...data, decision });
   } catch (e) {
     console.error("[Portfolio] GET /:id/live error:", e.message);

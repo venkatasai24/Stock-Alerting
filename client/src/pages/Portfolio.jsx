@@ -13,6 +13,7 @@ const DECISION_STYLE = {
   ACCUMULATE:   { cls: "chip-blue",   icon: "📥", label: "Accumulate" },
   NEAR_52W_LOW: { cls: "chip-blue",   icon: "🔍", label: "Near 52W Low" },
   HOLD:         { cls: "chip-muted",  icon: "✅", label: "Hold" },
+  REVIEW:       { cls: "chip-yellow", icon: "⚠️", label: "Review" },
 };
 
 const LTV_COLOR = {
@@ -81,7 +82,7 @@ function StockDetailModal({ s, onEdit, onDelete, onClose }) {
             <div className="modal-title" style={{ letterSpacing: -0.3 }}>{s.symbol}</div>
             <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{s.name}</div>
           </div>
-          {ds && <span className={`chip ${ds.cls}`} style={{ fontSize: 11 }}>{ds.icon} {ds.label}</span>}
+          {ds && marketOpen && <span className={`chip ${ds.cls}`} style={{ fontSize: 11 }}>{ds.icon} {ds.label}</span>}
           <button className="modal-close" onClick={onClose} style={{ marginLeft: 8 }}>×</button>
         </div>
 
@@ -256,7 +257,9 @@ export default function Portfolio() {
   const marketOpen    = getMarketStatus().open;
   const hasLive       = Object.keys(liveMap).length > 0;
   const pnlPos        = (summary?.totalPnl ?? 0) >= 0;
-  const dayPnl        = enriched.reduce((sum, s) => sum + (s.ld ? s.shares * s.ld.price * (s.ld.changeP / 100) : 0), 0);
+  const dayPnl        = marketOpen
+    ? enriched.reduce((sum, s) => sum + (s.ld ? s.shares * s.ld.price * (s.ld.changeP / 100) : 0), 0)
+    : 0;
   const totalInvested = enriched.reduce((sum, s) => sum + s.invested, 0);
 
   const rawPie = enriched.filter(s => s.current != null && s.current > 0).sort((a, b) => b.current - a.current);
@@ -340,7 +343,7 @@ export default function Portfolio() {
           <button className="btn btn-ghost" onClick={refresh} disabled={refreshing}>
             {refreshing ? <><span className="spinner spinner-sm" /> Refreshing…</> : "⟳ Refresh"}
           </button>
-          <button className="btn btn-primary" onClick={() => setModal("add")}>+ Add Stock</button>
+<button className="btn btn-primary" onClick={() => setModal("add")}>+ Add Stock</button>
         </div>
       </div>
 
@@ -472,7 +475,7 @@ export default function Portfolio() {
                           </td>
 
                           <td>
-                            {ds ? (
+                            {ds && marketOpen ? (
                               <span className={`chip ${ds.cls}`} style={{ fontSize: 10 }}>
                                 {ds.icon} {ds.label}
                               </span>

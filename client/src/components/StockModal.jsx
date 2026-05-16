@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import api from "../api/axios";
 
-const DEFAULT_PORTFOLIO = { symbol: "", name: "", shares: "", avgPrice: "" };
+const DEFAULT_PORTFOLIO = { symbol: "", name: "", shares: "", avgPrice: "", isETF: false };
 const DEFAULT_WATCHLIST = { symbol: "", name: "", shares: "", targetBuy: "", notes: "", priority: "medium" };
 
 function StockSearch({ onChange }) {
@@ -37,7 +37,7 @@ function StockSearch({ onChange }) {
     setQuery(stock.symbol);
     setOpen(false);
     setResults([]);
-    onChange(stock.symbol, stock.name);
+    onChange(stock.symbol, stock.name, stock.type);
   }
 
   return (
@@ -86,7 +86,7 @@ export default function StockModal({ mode = "portfolio", initial = null, onSave,
     if (!initial) return;
     if (isPortfolio) {
       setForm({ symbol: initial.symbol||"", name: initial.name||"",
-        shares: initial.shares??"", avgPrice: initial.avgPrice??"" });
+        shares: initial.shares??"", avgPrice: initial.avgPrice??"", isETF: initial.isETF ?? false });
     } else {
       setForm({ symbol: initial.symbol||"", name: initial.name||"",
         shares: initial.shares??"", targetBuy: initial.targetBuy??"", notes: initial.notes||"",
@@ -102,7 +102,7 @@ export default function StockModal({ mode = "portfolio", initial = null, onSave,
     setSaving(true);
     try {
       const payload = isPortfolio
-        ? { ...form, shares: Number(form.shares), avgPrice: Number(form.avgPrice) }
+        ? { ...form, shares: Number(form.shares), avgPrice: Number(form.avgPrice), isETF: form.isETF ?? false }
         : { ...form, shares: form.shares ? Number(form.shares) : null, targetBuy: form.targetBuy ? Number(form.targetBuy) : null };
       await onSave(payload);
       onClose();
@@ -125,7 +125,7 @@ export default function StockModal({ mode = "portfolio", initial = null, onSave,
             <label>Search NSE Stock *</label>
             {initial
               ? <input value={form.symbol} disabled />
-              : <StockSearch onChange={(sym, name) => setForm(f => ({ ...f, symbol: sym, name }))} />
+              : <StockSearch onChange={(sym, name, type) => setForm(f => ({ ...f, symbol: sym, name, isETF: type === "ETF" || type === "InvIT" || type === "REIT" }))} />
             }
             {form.name && (
               <div className="stock-name-hint">
@@ -146,9 +146,11 @@ export default function StockModal({ mode = "portfolio", initial = null, onSave,
                   <input type="number" value={form.avgPrice} onChange={e => set("avgPrice", e.target.value)} step="0.01" min="0" required />
                 </div>
               </div>
-              <div className="form-hint" style={{ marginBottom: 0 }}>
-                AI will auto-analyse movements and signal BUY MORE / BOOK PROFIT / CUT LOSS.
-              </div>
+              {form.isETF && (
+                <div style={{ fontSize: 12, color: "var(--yellow)", marginTop: 4 }}>
+                  📊 ETF detected — analysis will use accumulate-only mode (never sell)
+                </div>
+              )}
             </>
           ) : (
             <>

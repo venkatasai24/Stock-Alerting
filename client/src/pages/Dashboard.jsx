@@ -14,25 +14,26 @@ const ALERT_META = {
   WATCHLIST_TARGET: { cls: "chip-green",  icon: "🟢", label: "Buy Signal" },
 };
 
-function TrendBanner({ market }) {
+function TrendBanner({ market, marketOpen }) {
   if (!market) return null;
 
   const isHoliday = market.trend === "HOLIDAY";
+  const isClosed  = !marketOpen;
   const cls   = market.trend === "BULLISH" ? "trend-bull" : market.trend === "BEARISH" ? "trend-bear" : "trend-side";
   const arrow = market.trend === "BULLISH" ? "▲" : market.trend === "BEARISH" ? "▼" : "—";
   const color = market.trend === "BULLISH" ? "var(--green)" : market.trend === "BEARISH" ? "var(--red)" : "var(--yellow)";
 
   return (
-    <div className={`trend-banner ${isHoliday ? "trend-holiday" : cls}`}>
+    <div className={`trend-banner ${isHoliday || isClosed ? "trend-side" : cls}`}>
       <div>
         <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Nifty 50</div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
           <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, color: "var(--text)" }}>
             ₹{market.price?.toLocaleString("en-IN")}
           </span>
-          {isHoliday ? (
+          {isHoliday || isClosed ? (
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--muted)", background: "var(--bg2)", padding: "2px 10px", borderRadius: 99 }}>
-              NSE Holiday · 0.00%
+              {isHoliday ? "NSE Holiday" : "Market Closed"} · 0.00%
             </span>
           ) : (
             <span style={{ fontSize: 15, fontWeight: 700, color }}>
@@ -41,7 +42,7 @@ function TrendBanner({ market }) {
           )}
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 5 }}>
-          {isHoliday ? "" : `${market.trend} · `}
+          {isHoliday || isClosed ? "" : `${market.trend} · `}
           {new Date().toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
@@ -119,7 +120,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <TrendBanner market={market} />
+      <TrendBanner market={market} marketOpen={marketOpen} />
 
       <div className="grid-2 mt-16">
         {/* Recent Alerts */}
@@ -184,6 +185,13 @@ export default function Dashboard() {
             </div>
           )}
 
+          {picks?.closed && (
+            <div className="empty" style={{ padding: "36px 20px" }}>
+              <div className="empty-icon" style={{ fontSize: 32 }}>📅</div>
+              <div style={{ fontSize: 13, marginTop: 8 }}>Market is closed — picks resume next trading day</div>
+            </div>
+          )}
+
           {picks?.bearish && (
             <div className="empty" style={{ padding: "36px 20px" }}>
               <div className="empty-icon" style={{ fontSize: 32 }}>🔴</div>
@@ -207,7 +215,7 @@ export default function Dashboard() {
                         {!marketOpen ? "0.00%" : `${s.changeP >= 0 ? "▲" : "▼"} ${Math.abs(s.changeP).toFixed(2)}%`}
                       </span>
                     </div>
-                    {s.reasons[0] && (
+                    {s.reasons[0] && marketOpen && (
                       <div style={{ fontSize: 11, color: "var(--primary)" }}>✓ {s.reasons[0]}</div>
                     )}
                   </div>

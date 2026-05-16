@@ -9,6 +9,7 @@ const portfolioStockSchema = new mongoose.Schema({
   buyBelow:   { type: Number, default: null },
   sellAbove:  { type: Number, default: null },
   action:     { type: String, enum: ["HOLD", "WATCH", "EXIT"], default: "HOLD" },
+  isETF:      { type: Boolean, default: false },
 }, { timestamps: true });
 
 portfolioStockSchema.index({ userId: 1, symbol: 1 }, { unique: true });
