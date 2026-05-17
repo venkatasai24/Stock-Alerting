@@ -115,6 +115,13 @@ function StockDetailModal({ s, onEdit, onDelete, onClose }) {
           ))}
         </div>
 
+        {/* corporate action warning */}
+        {ld?.decision?.warning && (
+          <div style={{ padding: "10px 14px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: "var(--radius)", marginBottom: 14, fontSize: 12, color: "var(--yellow)", lineHeight: 1.5 }}>
+            {ld.decision.warning}
+          </div>
+        )}
+
         {/* analysis */}
         {ld?.decision && (
           <div style={{ padding: "14px 16px", background: "var(--bg2)", borderRadius: "var(--radius)", marginBottom: 20 }}>

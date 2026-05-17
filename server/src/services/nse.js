@@ -121,6 +121,89 @@ export async function fetchMarketTrend() {
   }
 }
 
+// ─── NSE Corporate Actions ───────────────────────────────────────────────────
+// NSE's API requires a browser-style session cookie. We fetch the homepage once
+// to grab cookies, cache them for 5 min, then hit the corporate actions endpoint.
+// Results are cached per-symbol for 6 hours — corporate actions don't change often.
+
+const NSE_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Referer": "https://www.nseindia.com/",
+};
+
+let nseCookies    = "";
+let cookieExpiry  = 0;
+let refreshInFlight = null; // singleton — prevents parallel refreshes
+const corpCache   = new Map(); // symbol → { data, ts }
+const CORP_TTL    = 6 * 60 * 60 * 1000; // 6 hours
+
+async function refreshNseCookies() {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    try {
+      const res = await axios.get("https://www.nseindia.com", {
+        headers: NSE_HEADERS,
+        timeout: 10000,
+      });
+      const raw = res.headers["set-cookie"];
+      if (raw?.length) {
+        nseCookies   = raw.map(c => c.split(";")[0]).join("; ");
+        cookieExpiry = Date.now() + 5 * 60 * 1000;
+        console.log("[NSE] Corporate action session refreshed");
+      }
+    } catch (err) {
+      console.warn("[NSE] Cookie refresh failed:", err.message);
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
+export async function fetchCorporateEvents(symbol) {
+  const cached = corpCache.get(symbol);
+  if (cached && Date.now() - cached.ts < CORP_TTL) return cached.data;
+
+  try {
+    if (Date.now() > cookieExpiry) await refreshNseCookies();
+
+    const { data } = await axios.get(
+      "https://www.nseindia.com/api/corporates-corporateActions",
+      {
+        params: { index: "equities", symbol },
+        headers: { ...NSE_HEADERS, Cookie: nseCookies },
+        timeout: 8000,
+      }
+    );
+
+    if (!Array.isArray(data)) {
+      const result = { hasCorporateAction: false };
+      corpCache.set(symbol, { data: result, ts: Date.now() });
+      return result;
+    }
+
+    const now          = Date.now();
+    const thirtyDaysAgo = now - 30 * 86400000;
+    const recent = data.filter(a => {
+      const d = a.exDate && new Date(a.exDate);
+      return d && d >= thirtyDaysAgo && d <= now;
+    });
+
+    const result = recent.length > 0
+      ? { hasCorporateAction: true, type: recent[0].subject, date: recent[0].exDate }
+      : { hasCorporateAction: false };
+
+    corpCache.set(symbol, { data: result, ts: Date.now() });
+    console.log(`[NSE] Corporate events ${symbol}: ${result.hasCorporateAction ? result.type : "none"}`);
+    return result;
+  } catch (err) {
+    console.warn(`[NSE] fetchCorporateEvents ${symbol} failed: ${err.message}`);
+    return { hasCorporateAction: false };
+  }
+}
+
 export const NIFTY50 = [
   "RELIANCE","TCS","HDFCBANK","INFY","ICICIBANK","KOTAKBANK","HINDUNILVR","ITC",
   "AXISBANK","LT","BHARTIARTL","SBIN","WIPRO","HCLTECH","ASIANPAINT","MARUTI",

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import PortfolioStock from "../models/PortfolioStock.js";
 import { protect } from "../middleware/auth.js";
-import { fetchPrice } from "../services/nse.js";
+import { fetchPrice, fetchCorporateEvents } from "../services/nse.js";
 import { evaluateStock } from "../services/decisionEngine.js";
 
 const router = Router();
@@ -73,7 +73,10 @@ router.get("/summary/live", async (req, res) => {
     }
 
     console.log(`[Portfolio] Summary/live for user ${req.user._id} — ${stocks.length} stocks`);
-    const prices = await Promise.all(stocks.map(s => fetchPrice(s.symbol).catch(() => null)));
+    const [prices, corpActions] = await Promise.all([
+      Promise.all(stocks.map(s => fetchPrice(s.symbol).catch(() => null))),
+      Promise.all(stocks.map(s => fetchCorporateEvents(s.symbol).catch(() => ({ hasCorporateAction: false })))),
+    ]);
 
     const totalInvested = stocks.reduce((sum, s) => sum + s.shares * s.avgPrice, 0);
     let totalCurrent = 0;
@@ -86,7 +89,7 @@ router.get("/summary/live", async (req, res) => {
       totalCurrent  += current;
       // Zero out changeP when market is not live — avoids stale intraday signals (BUY_MORE)
       const evalData = data.marketState === "REGULAR" ? data : { ...data, changeP: 0 };
-      const decision = evaluateStock(stock, evalData);
+      const decision = evaluateStock(stock, evalData, corpActions[i]);
       return { stock, data, decision, invested, current };
     });
 
@@ -110,10 +113,13 @@ router.get("/:id/live", async (req, res) => {
   try {
     const stock = await PortfolioStock.findOne({ _id: req.params.id, userId: req.user._id });
     if (!stock) return res.status(404).json({ message: "Not found" });
-    const data = await fetchPrice(stock.symbol);
+    const [data, corpAction] = await Promise.all([
+      fetchPrice(stock.symbol),
+      fetchCorporateEvents(stock.symbol).catch(() => ({ hasCorporateAction: false })),
+    ]);
     if (!data) return res.status(503).json({ message: "Price unavailable" });
     const evalData = data.marketState === "REGULAR" ? data : { ...data, changeP: 0 };
-    const decision = evaluateStock(stock, evalData);
+    const decision = evaluateStock(stock, evalData, corpAction);
     res.json({ ...data, decision });
   } catch (e) {
     console.error("[Portfolio] GET /:id/live error:", e.message);
